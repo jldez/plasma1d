@@ -56,13 +56,13 @@ tmax = 4.0*tau 		 										#fs
 steps_per_lambda = 60.0 ; dz = lambd/steps_per_lambda/n0
 depth_index = int(depth*1e-9/dz)
 Nz = int(np.floor(zmax/dz + 1)) ; z = np.linspace(0,zmax,Nz)
-dtmax = dz/c ; dt = 0.4*dtmax
+dtmax = dz/c ; dt = 0.2*dtmax
 Nt = int(np.floor(tmax/dt+1)) ; t = np.linspace(0,tmax,Nt)[:-1]*1e15
 I_0 = F/(pi**0.5*tau) ; E_0 = (2.0*I_0/(n0*eps0*c))**0.5 ; t_0 = tau*2.0*1e15
 
 # figure layout
 nrows, ncols = 4, 1
-dx, dy = 1.5, 1
+dx, dy = 1.5, 1.0
 figsize = plt.figaspect(float(dy * nrows) / float(dx * ncols))
 fig, axes = plt.subplots(nrows,ncols,figsize=figsize)
 
@@ -87,7 +87,6 @@ axes[0].locator_params(nbins=3, axis='y')
 axes[2].locator_params(nbins=3, axis='y')
 axes[1].set_yticks([1e-9, 1e-6, 1e-3,1])
 plt.setp([a.get_xticklabels() for a in axes[0:2]], visible=False)
-plt.setp([a.get_yticklabels() for a in axes[:]], visible=False)
 
 # legend fontsize
 leg=axes[1].get_legend()
@@ -107,4 +106,7 @@ axes[2].text(-19,13,r"$\mathrm{(c)}$")
 axes[3].text(-19,3.5,r"$\mathrm{(d)}$")
 
 # show()
+plt.tight_layout()
 savefig("fig_single_pulse_1d.pdf")
+
+print rho[depth_index,:].max()/rho_at

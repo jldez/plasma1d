@@ -12,7 +12,7 @@ rcParams['text.usetex'] = True
 rcParams['font.family'] = 'serif'
 matplotlib.rcParams.update({'font.size': 14})
 
-########definition des constantes############################
+########constants############################################
 c = 2.99792458*10.0**8.0 									#[m s-1]
 hbar = 1.054571726*10.0**-34.0 								#[kg m2 s-1]
 me = 9.10938291*10.0**-31.0 								#[kg]
@@ -25,55 +25,51 @@ sigma_atom = 3.0e-20 										#[m2]
 room_temperature = 300.0 									#[K]
 #############################################################
 
+# parameters
 F = 2.5 *1e4												#[kg s-2]
 tau = 10.0 *1e-15 											#[s]
 lambd = 800.0 *1e-9 ; omega = 2.0*pi*c/(lambd)				#nm ; s-1
 N = 1
 
-# F = 4.0 *1e4												#[kg s-2]
-# tau = 100.0 *1e-15 										#[s]
-# lambd = 800.0 *1e-9 ; omega = 2.0*pi*c/(lambd)			#nm ; s-1
-# N = 1
-
 print "calcul F="+str(F/1e4)+", tau="+str(tau*1e15)+", lambda="+str(lambd*1e9)+", N="+str(N) 
 
-#material
+# material
 m_redu = 0.75*me 											#kg
 n0 = 1.45 													# -
 bandGap = 9.0*q 											#kg m2 s-2
 rho_at = 2.2011171771e+28 									#[m-3]
 tau_r = 1.0													#[s]
-rho_trap = 5.0e-3 * rho_at
+rho_trap = 0.005 * rho_at
 xi = 0.05
 
-#domain
+# domain
 zmax = 500.0 *1e-9											#nm
 tmax = 4.0*tau 		 										#fs
 
-#discretization & pml
+# discretization & pml
 steps_per_lambda = 60.0 ; dz = lambd/steps_per_lambda/n0
 pml_width_per_lambda = 1.0
 nb_pml = int(np.floor(lambd*pml_width_per_lambda/dz+1))
 zmax = zmax + 2.0*pml_width_per_lambda*lambd
 Nz = int(np.floor(zmax/dz + 1)) ; z = np.linspace(0,zmax,Nz)
-dtmax = dz/c ; dt = 0.4*dtmax
+dtmax = dz/c ; dt = 0.2*dtmax
 Nt = int(np.floor(tmax/dt+1)) ; t = np.linspace(0,tmax,Nt)
 
-#conductivity in pml
+# conductivity in pml
 sigma=zeros((Nz)) ; m=5 #grading order for sigma
 sigma_max=(m+1)*8.0/(2*(mu0/(eps0*n0**2.0))**0.5*nb_pml*dz)
 sigma[Nz-nb_pml:Nz]=np.linspace(0,1,nb_pml)**m*sigma_max
 sigma[0:nb_pml]=np.linspace(1,0,nb_pml)**m*sigma_max
 sigma_star = sigma*mu0/(eps0*n0**2.0)
 
-#fields & quantities
+# fields & quantities
 Ex,Hy = zeros((Nz)),zeros((Nz))
 Jf,Jb,JK = zeros((Nz)),zeros((Nz)),zeros((Nz))
 rho,omega_p = zeros((Nz)),zeros((Nz))
 gamma_eff = zeros((Nz))
 Te = ones((Nz))*room_temperature
 
-#output arrays
+# output arrays
 Ex_out = zeros((Nz,Nt))
 rho_out = zeros((Nz,Nt))
 Te_out = zeros((Nz,Nt))
@@ -81,21 +77,21 @@ gamma_out = zeros((6,Nz,Nt))
 contribution_keldysk = zeros((Nz,Nt))
 contribution_mre = zeros((Nz,Nt))
 
-#Keldysh rate
+# Keldysh rate
 I_keldysh = np.logspace(11, 16, num=500)*10000
-#500pts, echelle log de I=10^11 a 10^16 W/cm2
+# 500pts, echelle log de I=10^11 a 10^16 W/cm2
 keldyshRateRaw = load("keldyshRate.npy") 
 def keldyshRate(E):
 	Ip = 0.5*n0*eps0*c*E**2.0
 	# interpolation lin sur echelle log (fonctionne quand meme)
 	return np.interp(Ip, I_keldysh, keldyshRateRaw)*1.0
 
-#source
+# source
 I_0 = F/(pi**0.5*tau) ; E_0 = (2.0*I_0/(n0*eps0*c))**0.5 ; t_0 = tau*2.0
 def source(n):
 	return E_0*np.exp(-((n*dt-t_0)/tau)**2.0)*np.cos(omega*n*dt)
 
-#init MRE
+# init MRE
 reflectivity_init = ((1.0-n0)**2.0)/((1.0+n0)**2.0)
 pond_energy = q**2.0*(E_0*(1.0-reflectivity_init))**2/(4.0*m_redu*omega**2.0)
 energy_crit = (1.0+m_redu/me)*(bandGap+pond_energy)
@@ -115,7 +111,7 @@ def one_photon_absorption(E,tau_drude):
 def avalanche_factor(E,tau_drude):
 	return (2.0**(1.0/k)-1.0)*one_photon_absorption(E,tau_drude)
 
-#taux de collisions
+# taux de collisions
 def gamma_ee(Te,rho):
 	return 4.0*pi*eps0/q**2.0 * (6.0/m_redu)**0.5 * (kb*Te)**1.5 +0.0*rho
 
@@ -140,7 +136,7 @@ def harmonic_mean(Te,rho):
 def dynamic_tau_drude(Te,rho):
 	return 1.0/harmonic_mean(Te,rho)
 
-#fdtd1d
+# fdtd1d
 A=((mu0-0.5*dt*sigma_star)/(mu0+0.5*dt*sigma_star))
 B=(dt/dz)/(mu0+0.5*dt*sigma_star)
 C=((eps0*n0**2.0-0.5*dt*sigma)/(eps0*n0**2.0+0.5*dt*sigma))
@@ -228,27 +224,18 @@ def update_plasma(n):
 
 # incubation
 if (N>1):
-	data = load("results/F"+str(F/1e4)+"_tau"+str(tau*1e15)+"_l"+str(lambd*1e9)+"_N"+str(N-1)+".npy").item()
-	rho_previous = data["rho"]
+	data = load("data/F"+str(F/1e4)+"_tau"+str(tau*1e15)+"_l"+str(lambd*1e9)+"_N"+str(N-1)+".npy").item()
+	rho_previous = data["rho"][:,-1]
 	rho_incubation = rho_trap*(1.0-np.exp(-xi*rho_previous/rho_trap))
 	rho_k[0,nb_pml+1:-nb_pml] = rho_incubation
 
+# calculs
 for n in range(Nt-1)[1:]:
 	reflectivity = update_plasma(n)
 	update_currents(n)
 	update_fields(n)
 
 energy_density = 1.5*Te_out*kb*rho_out + rho_out*(bandGap)
-
-# plot(t[:-1]-t_0,(Ex_out[nb_pml+1+11,:-1]/E_0)**2.0)
-# plot(t[:-1]-t_0,rho_out[nb_pml+1+11,:-1]/rho_at)
-# plot(t[:-1]-t_0,contribution_keldysk[nb_pml+,:-1]/rho_at)
-# plot(t[:-1]-t_0,contribution_mre[nb_pml+1,:-1]/rho_at)
-# plot(t[:-1]-t_0,Te_out[nb_pml+1,:-1])
-# plot(t[:-1]-t_0,energy_density[nb_pml+1,:-1]/rho_at/q/10.0)
-# plot(t[:-1]-t_0,gamma_out[0,nb_pml+1,:-1]/1e15)
-# ylim(0,1)
-# show()
 
 data_output = {"Ex" : Ex_out[nb_pml+1:-nb_pml,:-1] , "rho" : rho_out[nb_pml+1:-nb_pml,:-1] \
 	, "Te" : Te_out[nb_pml+1:-nb_pml,:-1], "energy_density" : energy_density[nb_pml+1:-nb_pml,:-1] \

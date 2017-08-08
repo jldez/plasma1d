@@ -30,8 +30,8 @@ F = 2.5 *1e4												#[kg s-2]
 tau = 10.0 *1e-15 										#[s]
 lambd = 800.0 *1e-9 ; omega = 2.0*pi*c/(lambd)				#nm ; s-1
 N = 1
-gamma_eff = 1.52716854968e+15
-alpha_eff = 0.0011996772343
+gamma_eff = 1.54832251656e+15
+alpha_eff = 0.00120633038634
 
 print "calcul F="+str(F/1e4)+", tau="+str(tau*1e15)+", lambda="+str(lambd*1e9)+", N="+str(N) 
 
@@ -41,7 +41,7 @@ n0 = 1.45 													# -
 bandGap = 9.0*q 											#kg m2 s-2
 rho_at = 2.2011171771e+28 									#[m-3]
 tau_r = 1.0													#[s]
-rho_trap = 5.0e-3 * rho_at
+rho_trap = 0.005 * rho_at
 xi = 0.05
 
 # domain
@@ -54,7 +54,7 @@ pml_width_per_lambda = 1.0
 nb_pml = int(np.floor(lambd*pml_width_per_lambda/dz+1))
 zmax = zmax + 2.0*pml_width_per_lambda*lambd
 Nz = int(np.floor(zmax/dz + 1)) ; z = np.linspace(0,zmax,Nz)
-dtmax = dz/c ; dt = 0.4*dtmax
+dtmax = dz/c ; dt = 0.2*dtmax
 Nt = int(np.floor(tmax/dt+1)) ; t = np.linspace(0,tmax,Nt)
 
 # conductivity in pml
@@ -130,7 +130,7 @@ def update_plasma(n):
 		return n0*eps0*c/2.0*E**2.0
 	contribution_keldysk[1:-1,n] = contribution_keldysk[1:-1,n-1] + dt*rho_at*nuK[1:-1]*sat[1:-1]
 	rho[1:-1] = rho[1:-1] + dt*sat[1:-1]*(rho_at*nuK[1:-1] \
-		+ 0*alpha_eff*intensity(Ex[1:-1])*rho[1:-1])
+		+ alpha_eff*intensity(Ex[1:-1])*rho[1:-1])
 
 	rho_out[:,n] = rho
 
@@ -145,22 +145,15 @@ def update_plasma(n):
 
 # incubation
 if (N>1):
-	data = load("results/F"+str(F/1e4)+"_tau"+str(tau*1e15)+"_l"+str(lambd*1e9)+"_N"+str(N-1)+".npy").item()
-	rho_previous = data["rho"]
+	data = load("data/F"+str(F/1e4)+"_tau"+str(tau*1e15)+"_l"+str(lambd*1e9)+"_N"+str(N-1)+".npy").item()
+	rho_previous = data["rho"][:,-1]
 	rho_incubation = rho_trap*(1.0-np.exp(-xi*rho_previous/rho_trap))
-	rho_k[0,nb_pml+1:-nb_pml] = rho_incubation
+	rho[nb_pml+1:-nb_pml] = rho_incubation
 
 for n in range(Nt-1)[1:]:
 	reflectivity = update_plasma(n)
 	update_currents(n)
 	update_fields(n)
-
-# plot(t[:-1]-t_0,(Ex_out[nb_pml+1+11,:-1]/E_0)**2.0)
-# plot(t[:-1]-t_0,rho_out[nb_pml+1,:-1]/rho_at)
-# plot(t[:-1]-t_0,contribution_keldysk[nb_pml+1,:-1]/rho_at)
-# plot(t[:-1]-t_0,(rho_out[nb_pml+1+11,:-1]-contribution_keldysk[nb_pml+1,:-1])/rho_at)
-# ylim(0)
-# show()
 
 data_output = {"Ex" : Ex_out[nb_pml+1:-nb_pml,:-1] , "rho" : rho_out[nb_pml+1:-nb_pml,:-1] \
 	, "contr_keldysh" : contribution_keldysk[nb_pml+1:-nb_pml,:-1] \
