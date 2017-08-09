@@ -79,7 +79,7 @@ I_keldysh = np.logspace(11, 16, num=500)*10000
 #500pts, echelle log de I=10^11 a 10^16 W/cm2
 keldyshRateRaw = load("keldyshRate.npy") 
 def keldyshRate(E):
-	Ip = 0.5*n0*eps0*c*E**2.0
+	Ip = 0.5*eps0*c*E**2.0
 	# interpolation lin sur echelle log (fonctionne quand meme)
 	return np.interp(Ip, I_keldysh, keldyshRateRaw)*1.0
 
@@ -160,3 +160,6 @@ data_output = {"Ex" : Ex_out[nb_pml+1:-nb_pml,:-1] , "rho" : rho_out[nb_pml+1:-n
 	, "contr_mre" : rho_out[nb_pml+1:-nb_pml,:-1]-contribution_keldysk[nb_pml+1:-nb_pml,:-1]}
 path = "data/simpl_F"+str(F/1e4)+"_tau"+str(tau*1e15)+"_l"+str(lambd*1e9)+"_N"+str(N)+".npy"
 save(path,data_output)
+
+plot(rho_out[nb_pml+1,:-1])
+show()

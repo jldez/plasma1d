@@ -109,4 +109,4 @@ axes[3].text(-19,3.5,r"$\mathrm{(d)}$")
 plt.tight_layout()
 savefig("fig_single_pulse_1d.pdf")
 
-print rho[depth_index,:].max()/rho_at
+# print rho[depth_index,:].max()/rho_at
